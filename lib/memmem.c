@@ -92,16 +92,16 @@ memmem(const void *haystack, size_t hlen, const void *needle, size_t nlen)
     if (nlen >= 4 && hlen >= 256) {
         return boyermoore_horspool_memmem(haystack, hlen, needle, nlen);
     }
-    for (j = 0, i = 0; i < hlen && j < nlen; i++) {
+    for (j = 0, i = 0; i < hlen; i++) {
         if (((unsigned char *)haystack)[i] == ((unsigned char *)needle)[j]) {
             j++;
+            if (j == nlen) {
+                return (char *)haystack + i - nlen + 1;
+            }
         } else {
             i -= (j != 0);
             j = 0;
         }
-    }
-    if (j == nlen) {
-        return (char *)haystack + i - nlen;
     }
     return NULL;
 }
