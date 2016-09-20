@@ -99,7 +99,7 @@ memmem(const void *haystack, size_t hlen, const void *needle, size_t nlen)
                 return (char *)haystack + i - nlen + 1;
             }
         } else {
-            i -= (j != 0);
+            i -= j;
             j = 0;
         }
     }
