@@ -58,7 +58,7 @@ extern unsigned long TARGET_JUMPADDR;
 
 typedef int (*printf_t)(const char *fmt, ...) __attribute__ ((format (printf, 1, 2)));
 
-typedef int (*aes_crypto_cmd_t)(int op, void *inbuf, void *outbuf, unsigned len, unsigned aes, char *iv, char *key);
+typedef int (*aes_crypto_cmd_t)(int op, void *inbuf, void *outbuf, unsigned len, unsigned aes, char *key, char *iv);
 extern aes_crypto_cmd_t aes_crypto_cmd_;
 
 /* asm stuff */
