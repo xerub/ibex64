@@ -25,15 +25,14 @@ _printf:
 	stp	fp, lr, [sp, #-16]!
 	mov	fp, sp
 
-	stp	x7, x8, [sp, #-16]!
+	stp	x7, x0, [sp, #-16]!
 	stp	x5, x6, [sp, #-16]!
 	stp	x3, x4, [sp, #-16]!
 	stp	x1, x2, [sp, #-16]!
 
-	mov	x8, x0
-	bl	get_printf_addr		// XXX hopefully x8 will not get clobbered
+	bl	get_printf_addr
 	mov	x1, x0
-	mov	x0, x8
+	ldr	x0, [sp, #56]
 	blr	x1
 
 	ldp	x1, x2, [sp], #16
