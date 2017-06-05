@@ -94,8 +94,8 @@ xref64(const uint8_t *buf, addr_t start, addr_t end, addr_t what)
         uint32_t op = *(uint32_t *)(buf + i);
         unsigned reg = op & 0x1F;
         if ((op & 0x9F000000) == 0x90000000) {
-            signed adr = ((op & 0x60000000) >> 17) | ((op & 0xFFFFE0) << 9);
-            value[reg] = adr + (i & ~0xFFF);
+            signed adr = ((op & 0x60000000) >> 18) | ((op & 0xFFFFE0) << 8);
+            value[reg] = ((long long)adr << 1) + (i & ~0xFFF);
         } else if ((op & 0xFF000000) == 0x91000000) {
             unsigned rn = (op >> 5) & 0x1F;
             unsigned shift = (op >> 22) & 3;
@@ -109,8 +109,8 @@ xref64(const uint8_t *buf, addr_t start, addr_t end, addr_t what)
             unsigned imm = ((op >> 10) & 0xFFF) << 3;
             value[reg] = value[rn] + imm;	/* XXX address, not actual value */
         } else if ((op & 0x9F000000) == 0x10000000) {
-            unsigned adr = ((op & 0x60000000) >> 29) | ((op & 0xFFFFE0) >> 3);
-            value[reg] = adr + i;
+            signed adr = ((op & 0x60000000) >> 18) | ((op & 0xFFFFE0) << 8);
+            value[reg] = ((long long)adr >> 11) + i;
         } else if ((op & 0xFF000000) == 0x58000000) {
             unsigned adr = (op & 0xFFFFE0) >> 3;
             value[reg] = adr + i;		/* XXX address, not actual value */
