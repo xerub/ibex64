@@ -207,6 +207,21 @@ find_aes_crypto_cmd(void)
     return (aes_crypto_cmd_t)find_easy("aes_crypto_cmd", sizeof("aes_crypto_cmd") - 1);
 }
 
+MAYBE_UNUSED create_envvar_t
+find_create_envvar(void)
+{
+    addr_t call;
+    addr_t ref = find_xref("build-style", sizeof("build-style") - 1);
+    if (!ref) {
+        return NULL;
+    }
+    call = step64((void *)TARGET_BASEADDR, ref, 16, INSN_CALL);
+    if (!call) {
+        return NULL;
+    }
+    return (create_envvar_t)(TARGET_BASEADDR + follow_call64((void *)TARGET_BASEADDR, call));
+}
+
 MAYBE_UNUSED int
 nullsub()
 {
@@ -230,6 +245,18 @@ stub_aes_crypto_cmd(int crypt_type, void *inbuf, void *outbuf, unsigned int inbu
         return aes_crypto_cmd_(crypt_type, inbuf, outbuf, inbuf_len, aes_key_type, iv, key);
     }
     printf_("unresolved aes_crypto_cmd\n");
+    return -1;
+}
+
+MAYBE_UNUSED int
+stub_create_envvar(const char *var, const char *val, int wtf)
+{
+    create_envvar_t p = find_create_envvar();
+    if (p) {
+        create_envvar_ = p;
+        return create_envvar_(var, val, wtf);
+    }
+    printf_("unresolved create_envvar\n");
     return -1;
 }
 
@@ -296,6 +323,12 @@ link(void *caller)
 #elif !defined(TARGET_BASEADDR)
         aes_crypto_cmd_ = (aes_crypto_cmd_t)(TARGET_BASEADDR + TARGET_AES_CRYPTO_CMD);
 #endif
+
+#ifndef TARGET_CREATE_ENVVAR
+        create_envvar_ = stub_create_envvar;
+#elif !defined(TARGET_BASEADDR)
+        create_envvar_ = (create_envvar_t)(TARGET_BASEADDR + TARGET_CREATE_ENVVAR);
+#endif
     }
     return 0;
 }
@@ -307,5 +340,11 @@ link(void *caller)
 aes_crypto_cmd_t aes_crypto_cmd_
 #ifdef TARGET_AES_CRYPTO_CMD
     = (aes_crypto_cmd_t)(TARGET_BASEADDR + TARGET_AES_CRYPTO_CMD)
+#endif
+;
+
+create_envvar_t create_envvar_
+#ifdef TARGET_CREATE_ENVVAR
+    = (create_envvar_t)(TARGET_BASEADDR + TARGET_CREATE_ENVVAR);
 #endif
 ;

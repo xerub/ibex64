@@ -62,6 +62,9 @@ typedef int (*snprintf_t)(char *buf, size_t max, const char *fmt, ...) __attribu
 typedef int (*aes_crypto_cmd_t)(int op, void *inbuf, void *outbuf, unsigned len, unsigned aes, char *key, char *iv);
 extern aes_crypto_cmd_t aes_crypto_cmd_;
 
+typedef int (*create_envvar_t)(const char *var, const char *val, int wtf);
+extern create_envvar_t create_envvar_;
+
 /* asm stuff */
 
 int _printf(const char *fmt, ...) __attribute__ ((format (printf, 1, 2)));
