@@ -20,6 +20,8 @@
 
 #include "plib.h"
 
+#define TRANSFER_CHUNK 1000
+
 static void
 hex2str(char *str, int buflen, const unsigned char *buf)
 {
@@ -58,6 +60,10 @@ str2hex(int buflen, unsigned char *buf, const char *str)
     }
     return buf - ptr;
 }
+
+unsigned long get_addr = 0;
+unsigned long get_endp = 0x1000;
+static char get_buf[TRANSFER_CHUNK * 2 + 16];
 
 int
 _main(int argc, CmdArg *argv)
@@ -118,6 +124,42 @@ _main(int argc, CmdArg *argv)
         aes_crypto_cmd_(mode, tmpbuf, outbuf, buflen, type, NULL, NULL);
         hex2str(strbuf, buflen, outbuf);
         _printf("out: %s\n", strbuf);
+        return 0;
+    }
+
+    /* --- Transfer function --- */
+
+    if (argc >= 2 && argv[1].string[0] == 'g') {
+        /* cmd g [addr [endp]] */
+        if (argc > 2) {
+            get_addr = argv[2].inthex;
+            get_endp = get_addr + 0x1000;
+            if (argc > 3) {
+                get_endp = argv[3].inthex;
+                if (get_endp < get_addr) {
+                    get_endp = get_addr + 0x1000;
+                }
+            }
+            return 0;
+        }
+
+        if (get_addr < get_endp) {
+            int i, chunk = get_endp - get_addr;
+            if (chunk > TRANSFER_CHUNK) {
+                chunk = TRANSFER_CHUNK;
+            }
+            i = _snprintf(get_buf, 16, "%u:%x:", chunk, (unsigned)get_addr);
+            if (i) {
+                hex2str(get_buf + i - 1, chunk, (void *)get_addr);
+                if (create_envvar_("cmd-results", get_buf, 0) == 0) {
+                    get_addr += chunk;
+                    return 0;
+                }
+            }
+        }
+
+        create_envvar_("cmd-results", "end-of-transmission", 0);
+        _printf("end-of-transmission\n");
         return 0;
     }
 
