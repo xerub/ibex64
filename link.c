@@ -41,7 +41,18 @@ static printf_t printf_
 #endif
 ;
 
+static snprintf_t snprintf_
+#ifdef TARGET_SNPRINTF
+    = (snprintf_t)(TARGET_SNPRINTF
+#ifdef TARGET_BASEADDR
+    + TARGET_BASEADDR
+#endif
+    )
+#endif
+;
+
 printf_t get_printf_addr(void) { return printf_; }
+snprintf_t get_snprintf_addr(void) { return snprintf_; }
 
 #define IBOOT_LEN 0x50000
 #define MAYBE_UNUSED __attribute__((unused)) static
@@ -175,6 +186,21 @@ find_printf(void)
     return (printf_t)(TARGET_BASEADDR + follow_call64((void *)TARGET_BASEADDR, call));
 }
 
+MAYBE_UNUSED snprintf_t
+find_snprintf(void)
+{
+    addr_t call;
+    addr_t ref = find_xref("CPID:", sizeof("CPID:") - 1);
+    if (!ref) {
+        return NULL;
+    }
+    call = step64((void *)TARGET_BASEADDR, ref, 64, INSN_CALL);
+    if (!call) {
+        return NULL;
+    }
+    return (snprintf_t)(TARGET_BASEADDR + follow_call64((void *)TARGET_BASEADDR, call));
+}
+
 MAYBE_UNUSED aes_crypto_cmd_t
 find_aes_crypto_cmd(void)
 {
@@ -184,6 +210,14 @@ find_aes_crypto_cmd(void)
 MAYBE_UNUSED int
 nullsub()
 {
+    return 0;
+}
+
+MAYBE_UNUSED int
+stub_snprintf(char *buf, size_t max, const char *fmt, long arg)
+{
+    (void)(buf && max && fmt && arg);
+    printf_("unresolved snprintf\n");
     return 0;
 }
 
@@ -246,6 +280,15 @@ link(void *caller)
         }
 #elif !defined(TARGET_BASEADDR)
         printf_ = (printf_t)(TARGET_BASEADDR + TARGET_PRINTF);
+#endif
+
+#ifndef TARGET_SNPRINTF
+        snprintf_ = find_snprintf();
+        if (!snprintf_) {
+            snprintf_ = (snprintf_t)stub_snprintf;
+        }
+#elif !defined(TARGET_BASEADDR)
+        snprintf_ = TARGET_BASEADDR + TARGET_SNPRINTF;
 #endif
 
 #ifndef TARGET_AES_CRYPTO_CMD

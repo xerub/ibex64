@@ -52,6 +52,7 @@ LIBSOURCES = \
 	asm/cache.S \
 	asm/interrupt.S \
 	asm/printf.S \
+	asm/snprintf.S \
 	lib/atoi.c \
 	lib/div.c \
 	lib/memcmp.c \
