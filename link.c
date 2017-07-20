@@ -48,8 +48,10 @@ printf_t get_printf_addr(void) { return printf_; }
 
 typedef unsigned long long addr_t;
 
+#define INSN_CALL 0x94000000, 0xFC000000
+
 static addr_t
-step_64(const uint8_t *buf, addr_t start, size_t length, uint32_t what, uint32_t mask)
+step64(const uint8_t *buf, addr_t start, size_t length, uint32_t what, uint32_t mask)
 {
     addr_t end = start + length;
     while (start < end) {
@@ -122,6 +124,16 @@ xref64(const uint8_t *buf, addr_t start, addr_t end, addr_t what)
     return 0;
 }
 
+static addr_t
+follow_call64(const uint8_t *buf, addr_t call)
+{
+    long long w;
+    w = *(uint32_t *)(buf + call) & 0x3FFFFFF;
+    w <<= 64 - 26;
+    w >>= 64 - 26 - 2;
+    return call + w;
+}
+
 MAYBE_UNUSED addr_t
 find_xref(const char *pattern, size_t patlen)
 {
@@ -151,20 +163,16 @@ find_easy(const char *pattern, size_t patlen)
 MAYBE_UNUSED printf_t
 find_printf(void)
 {
-    long long w;
     addr_t call;
     addr_t ref = find_xref("jumping into image at", sizeof("jumping into image at") - 1);
     if (!ref) {
         return NULL;
     }
-    call = step_64((void *)TARGET_BASEADDR, ref, 16, 0x94000000, 0xFC000000);
+    call = step64((void *)TARGET_BASEADDR, ref, 16, INSN_CALL);
     if (!call) {
         return NULL;
     }
-    w = *(uint32_t *)(TARGET_BASEADDR + call) & 0x3FFFFFF;
-    w <<= 64 - 26;
-    w >>= 64 - 26 - 2;
-    return (printf_t)(TARGET_BASEADDR + call + w);
+    return (printf_t)(TARGET_BASEADDR + follow_call64((void *)TARGET_BASEADDR, call));
 }
 
 MAYBE_UNUSED aes_crypto_cmd_t
